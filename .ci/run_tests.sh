@@ -77,5 +77,21 @@ if [ "$TEST_SUITE" == "plugins" ]; then
     fi
 fi
 if [ "$TEST_SUITE" == "pdk" ]; then
-    TEST_NGINX_RANDOMIZE=1 prove -I. -j$JOBS -r t/01-pdk
+    for i in `seq 3`
+    do
+        if TEST_NGINX_RANDOMIZE=1 prove -I. -j$JOBS -r t/01-pdk &> "pdk-test-output.txt"; then
+            cat "pdk-test-output.txt"
+            exit 0
+        else
+            # if it failed and it wasn't because of busy ports...
+            if ! grep -i "address already in use" "pdk-test-output.txt"; then
+                # ..then fail for real
+                break
+            fi
+            # otherwise, loop and retry
+            echo "[attempt $i] test failed due to busy port"
+        fi
+    done
+    cat "pdk-test-output.txt"
+    exit 1
 fi
