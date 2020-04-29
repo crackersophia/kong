@@ -63,6 +63,22 @@ return {
             -- Do nothing, accept existing state
           END;
         $$;
+
+        -- add certificates reference to upstreams table
+        DO $$
+          BEGIN
+            ALTER TABLE IF EXISTS ONLY "upstreams" ADD "client_certificate_id" UUID REFERENCES "certificates" ("id");
+          EXCEPTION WHEN DUPLICATE_COLUMN THEN
+            -- Do nothing, accept existing state
+          END;
+        $$;
+
+        DO $$
+          BEGIN
+            CREATE INDEX IF NOT EXISTS "upstreams_fkey_client_certificate" ON "upstreams" ("client_certificate_id");
+          EXCEPTION WHEN UNDEFINED_COLUMN THEN
+            -- Do nothing, accept existing state
+        END$$;
     ]],
     teardown = function(connector)
       -- add `cert_digest` field for `ca_certificates` table
@@ -76,6 +92,10 @@ return {
 
       DROP INDEX IF EXISTS ca_certificates_cert_idx;
       CREATE INDEX IF NOT EXISTS ca_certificates_cert_digest_idx ON ca_certificates(cert_digest);
+
+      -- add certificates reference to upstreams table
+      ALTER TABLE upstreams ADD client_certificate_id uuid;
+      CREATE INDEX IF NOT EXISTS upstreams_client_certificate_id_idx ON upstreams(client_certificate_id);
     ]],
     teardown = function(connector)
       -- add `cert_digest` field for `ca_certificates` table

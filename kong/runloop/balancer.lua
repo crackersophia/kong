@@ -367,10 +367,31 @@ do
         checks.active.unhealthy.interval = 0
       end
 
+      local ssl_cert, ssl_key
+      if upstream.client_certificate then
+        local get_certificate = require("kong.runloop.certificate").get_certificate
+        local cert, err = get_certificate(upstream.client_certificate)
+        if not cert then
+          log(ERR, "unable to fetch upstream client TLS certificate ",
+              upstream.client_certificate.id, ": ", err)
+          return nil, err
+        end
+        ssl_cert = cert.cert
+        ssl_key = cert.key
+
+      elseif kong.configuration.client_ssl then
+        local pl_file = require("pl.file")
+        ssl_cert = assert(pl_file.read(kong.configuration.client_ssl_cert))
+        ssl_key = assert(pl_file.read(kong.configuration.client_ssl_cert_key))
+
+      end
+
       local healthchecker, err = healthcheck.new({
         name = upstream.name,
         shm_name = "kong_healthchecks",
         checks = checks,
+        ssl_cert = ssl_cert,
+        ssl_key = ssl_key,
       })
 
       if not healthchecker then
