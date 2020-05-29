@@ -188,5 +188,18 @@ describe("Log Serializer", function()
 
       kong.log.warn = orig_warn
     end)
+
+    it("serializes request and response bodies present in the ngx context", function()
+      kong.ctx.plugin = {
+        request_body = "request body",
+        response_body = "response body",
+      }
+
+      local res = kong.log.serialize({ngx = ngx, kong = kong, })
+      assert.is_table(res)
+
+      assert.equal(res.request.body, "request body")
+      assert.equal(res.response.body, "response body")
+    end)
   end)
 end)

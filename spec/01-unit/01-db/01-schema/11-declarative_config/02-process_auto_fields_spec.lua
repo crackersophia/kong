@@ -359,6 +359,7 @@ describe("declarative config: process_auto_fields", function()
                       keepalive = 60000,
                       timeout = 10000,
                       tls = false,
+                      log_body = false,
                     }
                   },
                 }
@@ -666,6 +667,7 @@ describe("declarative config: process_auto_fields", function()
                           keepalive = 60000,
                           timeout = 10000,
                           tls = false,
+                          log_body = false,
                         }
                       }
                     }

@@ -523,6 +523,13 @@ do
 
     local host_port = ctx.host_port or var.server_port
 
+    local request_body
+    local response_body
+    if kong.ctx.plugin then
+      request_body = kong.ctx.plugin.request_body
+      response_body = kong.ctx.plugin.response_body
+    end
+
     return {
       request = {
         uri = request_uri,
@@ -530,6 +537,7 @@ do
         querystring = okong.request.get_query(), -- parameters, as a table
         method = okong.request.get_method(), -- http method
         headers = req_headers,
+        body = request_body,
         size = var.request_length,
         tls = request_tls
       },
@@ -537,6 +545,7 @@ do
       response = {
         status = ongx.status,
         headers = resp_headers,
+        body = response_body,
         size = var.bytes_sent
       },
       tries = (ctx.balancer_data or {}).tries,

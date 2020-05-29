@@ -6,6 +6,27 @@ local ngx = ngx
 local timer_at = ngx.timer.at
 
 
+local function get_body_data()
+  local req = ngx.req
+
+  req.read_body()
+  local data = req.get_body_data()
+  if data then
+    return data
+  end
+
+  local file_path = req.get_body_file()
+  if file_path then
+    local file = io.open(file_path, "r")
+    data = file:read("*all")
+    file:close()
+    return data
+  end
+
+  return ""
+end
+
+
 local function log(premature, conf, message)
   if premature then
     return
@@ -52,8 +73,24 @@ local TcpLogHandler = {
 }
 
 
+function TcpLogHandler:access(conf)
+  if conf.log_body then
+    kong.ctx.plugin.request_body = get_body_data()
+    kong.ctx.plugin.response_body = ""
+  end
+end
+
+
+function TcpLogHandler:body_filter(conf)
+  if conf.log_body then
+    local chunk = ngx.arg[1]
+    kong.ctx.plugin.response_body = kong.ctx.plugin.response_body .. (chunk or "")
+  end
+end
+
+
 function TcpLogHandler:log(conf)
-  local message = kong.log.serialize()
+  local message = kong.log.serialize({kong = kong, })
   local ok, err = timer_at(0, log, conf, message)
   if not ok then
     kong.log.err("failed to create timer: ", err)
